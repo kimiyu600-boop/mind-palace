@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>记忆宫殿 — Mind Palace</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --green:#10b981;--green-hover:#34d399;--green-muted:rgba(16,185,129,0.12);--green-glow:rgba(16,185,129,0.2);
+  --red:#f87171;--amber:#fbbf24;
+  --bg:#09090b;--bg-elevated:#131316;--card:#18181b;
+  --text:#fafafa;--text-secondary:#a1a1aa;--muted:#71717a;
+  --border:#27272a;--border-subtle:#1f1f23;
+  --radius-lg:16px;--radius-md:12px;--radius-sm:8px;
+  --shadow:0 1px 2px rgba(0,0,0,0.3);
+  --nav-height:68px;
+  --color-tag-1:#3b82f6;--color-tag-2:#f59e0b;--color-tag-3:#ef4444;--color-tag-4:#8b5cf6;
+  --color-tag-5:#06b6d4;--color-tag-6:#f97316;--color-tag-7:#ec4899;--color-tag-8:#84cc16;
+}
+body{
+  font-family:"Inter",-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Roboto,sans-serif;
+  background:var(--bg);color:var(--text);min-height:100vh;min-height:100dvh;
+  padding-bottom:var(--nav-height);-webkit-font-smoothing:antialiased;letter-spacing:-0.01em;
+}
+.header{
+  position:sticky;top:0;z-index:100;background:var(--bg);
+  padding:16px 20px 12px;display:flex;align-items:center;justify-content:space-between;
+}
+.header h1{font-size:1.15rem;font-weight:700;}
+.header .back-btn{
+  background:none;border:1px solid var(--border);color:var(--text);padding:6px 14px;
+  border-radius:20px;font-size:0.8rem;cursor:pointer;transition:all .15s;
+}
+.header .back-btn:hover{border-color:var(--green);color:var(--green);}
+
+/* Tabs */
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;height:var(--nav-height);
+  background:var(--bg);border-top:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-around;
+  z-index:100;padding-bottom:env(safe-area-inset-bottom);
+}
+.nav-item{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  font-size:0.65rem;color:var(--muted);cursor:pointer;padding:8px 20px;
+  transition:color .15s;letter-spacing:0.02em;
+}
+.nav-item .nav-icon{font-size:1.25rem;font-weight:300;transition:color .15s;}
+.nav-item.active,.nav-item.active .nav-icon{color:var(--green);font-weight:600;}
+
+/* Panels */
+.panel{display:none;padding:0 16px 20px;animation:fadeIn .2s ease;}
+.panel.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* Cards */
+.card{
+  background:var(--card);border-radius:var(--radius-lg);padding:18px 16px;
+  border:1px solid var(--border);margin-bottom:10px;transition:border-color .15s;cursor:pointer;
+}
+.card:hover{border-color:var(--border-subtle);}
+.card .card-title{font-size:0.95rem;font-weight:600;margin-bottom:4px;}
+.card .card-desc{font-size:0.78rem;color:var(--muted);margin-bottom:2px;}
+.card .card-meta{font-size:0.7rem;color:var(--text-secondary);}
+
+/* Buttons */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:10px 20px;border-radius:22px;font-size:0.85rem;font-weight:600;
+  border:none;cursor:pointer;transition:all .15s;letter-spacing:-0.01em;
+}
+.btn:active{transform:scale(0.96);}
+.btn-green{background:var(--green);color:#000;}
+.btn-green:hover{background:var(--green-hover);}
+.btn-red{background:transparent;color:var(--red);border:1px solid var(--red);}
+.btn-red:hover{background:rgba(248,113,113,0.1);}
+.btn-ghost{background:var(--bg-elevated);color:var(--muted);font-size:0.78rem;}
+.btn-ghost:hover{color:var(--text);}
+.btn-sm{padding:6px 14px;font-size:0.75rem;}
+.btn-icon{width:36px;height:36px;padding:0;border-radius:50%;font-size:1.1rem;}
+.btn-camera{
+  background:var(--bg-elevated);color:var(--muted);
+  border:1.5px dashed var(--border);padding:8px 14px;font-size:0.78rem;border-radius:var(--radius-sm);
+}
+
+/* Inputs */
+.field{margin-bottom:14px;text-align:left;}
+.field label{font-size:0.7rem;font-weight:600;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.06em;}
+.field input,.field textarea,.field select{
+  width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  font-size:0.9rem;outline:none;transition:all .2s;background:var(--bg-elevated);
+  color:var(--text);font-family:inherit;resize:vertical;
+}
+.field textarea{min-height:80px;}
+.field input:focus,.field textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-muted);}
+
+/* Empty state */
+.empty{text-align:center;padding:60px 24px;color:var(--muted);}
+.empty .empty-icon{font-size:2.5rem;margin-bottom:12px;opacity:0.4;}
+.empty .empty-text{font-size:0.85rem;margin-bottom:4px;}
+.empty .empty-sub{font-size:0.75rem;color:var(--text-secondary);}
+
+/* Modal */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;
+  display:flex;align-items:flex-end;justify-content:center;
+  animation:fadeIn .15s ease;padding:16px;
+}
+.modal{
+  background:var(--card);border-radius:var(--radius-lg);border:1px solid var(--border);
+  padding:24px 20px 20px;width:100%;max-width:440px;max-height:85vh;overflow-y:auto;
+}
+.modal h2{font-size:1rem;font-weight:700;margin-bottom:16px;text-align:center;}
+.modal-actions{display:flex;gap:8px;margin-top:16px;justify-content:flex-end;}
+.modal-actions .btn{flex:1;}
+
+/* Toast */
+.toast{
+  position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(120px);
+  background:var(--card);color:var(--text);padding:10px 24px;
+  border-radius:22px;font-size:0.82rem;z-index:300;font-weight:500;
+  border:1px solid var(--border);transition:transform .25s ease;
+  white-space:nowrap;
+}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.good{border-color:var(--green);color:var(--green);}
+
+/* FAB */
+.fab{
+  position:fixed;bottom:calc(var(--nav-height) + 20px);right:20px;
+  width:52px;height:52px;border-radius:50%;background:var(--green);
+  color:#000;font-size:1.5rem;border:none;cursor:pointer;z-index:50;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 16px var(--green-glow);transition:all .15s;
+}
+.fab:active{transform:scale(0.92);}
+
+/* Spatial Canvas */
+.spatial-canvas{
+  position:relative;width:100%;aspect-ratio:1;max-height:calc(100vh - 240px);
+  background:var(--bg-elevated);border-radius:var(--radius-lg);border:1px solid var(--border);
+  background-image:
+    linear-gradient(rgba(39,39,42,0.3) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(39,39,42,0.3) 1px,transparent 1px);
+  background-size:10% 10%;overflow:hidden;margin-bottom:12px;
+}
+.canvas-crosshair{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:20px;height:20px;pointer-events:none;opacity:0.15;
+}
+.canvas-crosshair::before,.canvas-crosshair::after{
+  content:'';position:absolute;background:var(--green);
+}
+.canvas-crosshair::before{left:0;right:0;top:50%;height:1px;}
+.canvas-crosshair::after{top:0;bottom:0;left:50%;width:1px;}
+
+.locus-marker{
+  position:absolute;transform:translate(-50%,-50%);
+  width:40px;height:40px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.7rem;font-weight:700;color:#fff;cursor:pointer;
+  border:2px solid rgba(255,255,255,0.25);transition:all .15s;
+  box-shadow:0 2px 8px rgba(0,0,0,0.4);z-index:1;text-shadow:0 1px 2px rgba(0,0,0,0.5);
+}
+.locus-marker:hover{transform:translate(-50%,-50%) scale(1.15);z-index:2;border-color:#fff;}
+.locus-marker .marker-label{
+  position:absolute;top:100%;margin-top:4px;white-space:nowrap;
+  font-size:0.7rem;font-weight:500;color:var(--text);text-shadow:0 1px 4px rgba(0,0,0,0.8);
+}
+
+/* Color tag picker */
+.color-picker{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;}
+.color-dot{
+  width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid transparent;
+  transition:all .15s;flex-shrink:0;
+}
+.color-dot.selected{border-color:#fff;transform:scale(1.15);box-shadow:0 0 8px currentColor;}
+
+/* Image preview */
+.img-preview{max-width:100%;max-height:200px;border-radius:var(--radius-sm);margin-top:8px;display:none;}
+.img-preview.show{display:block;}
+
+/* Review mode */
+.review-canvas{
+  position:relative;width:100%;aspect-ratio:1;max-height:300px;
+  background:var(--bg-elevated);border-radius:var(--radius-lg);border:1px solid var(--border);
+  background-image:
+    linear-gradient(rgba(39,39,42,0.25) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(39,39,42,0.25) 1px,transparent 1px);
+  background-size:20% 20%;margin:0 auto 16px;overflow:hidden;
+}
+.landmark-icon{
+  position:absolute;transform:translate(-50%,-50%);
+  font-size:1.3rem;opacity:0.55;pointer-events:none;
+  text-shadow:0 1px 3px rgba(0,0,0,0.5);
+}
+.landmark-label{
+  position:absolute;transform:translate(-50%,12px);
+  font-size:0.6rem;color:var(--muted);pointer-events:none;white-space:nowrap;
+}
+.review-target{
+  position:absolute;transform:translate(-50%,-50%);
+  width:40px;height:40px;border-radius:50%;
+  border:2.5px dashed var(--green);pointer-events:none;
+  animation:pulse 2s ease-in-out infinite;
+}
+@keyframes pulse{
+  0%,100%{box-shadow:0 0 8px var(--green-glow);border-color:var(--green);}
+  50%{box-shadow:0 0 20px var(--green-glow);border-color:var(--green-hover);width:48px;height:48px;}
+}
+.review-position-desc{
+  font-size:0.85rem;color:var(--text-secondary);margin-bottom:16px;text-align:center;
+}
+.review-position-desc strong{color:var(--green);font-weight:600;}
+.review-card{
+  text-align:center;padding:20px 16px;
+}
+.review-card .locus-hint{font-size:0.85rem;color:var(--muted);margin-bottom:8px;}
+.review-card .locus-position{
+  font-size:1.6rem;font-weight:700;color:var(--green);margin-bottom:24px;
+}
+.review-card .revealed-content{display:none;margin-top:20px;}
+.review-card .revealed-content.show{display:block;}
+.review-card .item-title{font-size:1.1rem;font-weight:700;margin-bottom:8px;}
+.review-card .item-desc{font-size:0.9rem;color:var(--text-secondary);margin-bottom:12px;}
+.review-card .item-image{max-width:100%;max-height:240px;border-radius:var(--radius-sm);}
+.review-progress{height:4px;background:var(--border);border-radius:2px;margin-bottom:20px;overflow:hidden;}
+.review-progress .fill{height:100%;background:var(--green);transition:width .3s;border-radius:2px;}
+.review-summary{text-align:center;padding:20px;}
+.review-summary .big-num{font-size:2.5rem;font-weight:700;color:var(--green);}
+</style>
+</head>
+<body>
+
+<div class="header" id="header">
+  <h1 id="headerTitle">记忆宫殿</h1>
+  <button class="back-btn" id="btnBack" style="display:none;">← 返回</button>
+</div>
+
+<!-- Panels -->
+<div class="panel active" id="panelPalaces"></div>
+<div class="panel" id="panelDetail"></div>
+<div class="panel" id="panelCanvas"></div>
+<div class="panel" id="panelReview"></div>
+<div class="panel" id="panelProfile"></div>
+
+<!-- FAB -->
+<button class="fab" id="fabAdd" style="display:none;">+</button>
+
+<!-- Modals -->
+<div class="modal-overlay" id="modalOverlay" style="display:none;"><div class="modal" id="modalContent"></div></div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Bottom Nav -->
+<nav class="bottom-nav">
+  <div class="nav-item active" data-tab="palaces">
+    <span class="nav-icon">◈</span><span>宫殿</span>
+  </div>
+  <div class="nav-item" data-tab="review">
+    <span class="nav-icon">◎</span><span>复习</span>
+  </div>
+  <div class="nav-item" data-tab="profile">
+    <span class="nav-icon">◉</span><span>我的</span>
+  </div>
+</nav>
+
+<script>
+(function(){
+var SUPABASE_URL = 'https://fdldkejfkvcymlzcmeub.supabase.co';
+var SUPABASE_KEY = 'sb_publishable_0r9JoiUqOggGX7Cum1gjtQ_WEkBE2Sp';
+var currentUser = null;
+var STORAGE_KEY = '';
+var COLOR_TAGS = ['#3b82f6','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#ec4899','#84cc16'];
+var COLOR_NAMES = ['蓝','金','红','紫','青','橙','粉','绿'];
+var LANDMARK_TYPES = [
+  {icon:'🚪',name:'门'},{icon:'🪟',name:'窗户'},{icon:'🛋️',name:'沙发'},
+  {icon:'📖',name:'书桌'},{icon:'🛏️',name:'床'},{icon:'📚',name:'书架'},
+  {icon:'👔',name:'衣柜'},{icon:'🍽️',name:'餐桌'},{icon:'📺',name:'电视'},
+  {icon:'🪞',name:'镜子'},{icon:'🪴',name:'植物'},{icon:'💡',name:'灯'}
+];
+
+// --- State ---
+var data = { palaces:[], rooms:[], items:[] };
+var currentPalaceId = null;
+var currentRoomId = null;
+var reviewIndex = 0;
+var reviewItems = [];
+var reviewRemembered = 0;
+
+// --- DOM ---
+var $headerTitle = document.getElementById('headerTitle');
+var $btnBack = document.getElementById('btnBack');
+var $fabAdd = document.getElementById('fabAdd');
+var $modalOverlay = document.getElementById('modalOverlay');
+var $modalContent = document.getElementById('modalContent');
+var $toast = document.getElementById('toast');
+var panels = {};
+['palaces','detail','canvas','review','profile'].forEach(function(p){
+  panels[p] = document.getElementById('panel'+p.charAt(0).toUpperCase()+p.slice(1));
+});
+
+// --- Auth ---
+currentUser = (function(){
+  var u = sessionStorage.getItem('user');
+  if (!u) {
+    u = localStorage.getItem('kimi-remembered-user');
+    if (u) { try{ u=JSON.parse(u); sessionStorage.setItem('user',JSON.stringify(u)); }catch(e){ u=null; } }
+    else { location.href = 'login.html'; return null; }
+  } else {
+    try{ u = JSON.parse(u); }catch(e){ u = null; }
+  }
+  if (!u || !u.id) { location.href = 'login.html'; return null; }
+  STORAGE_KEY = 'kc-mindpalace-' + u.id;
+  return u;
+})();
+if (!currentUser) throw new Error('Not authenticated');
+
+// --- Data ---
+function load(){
+  var raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) {
+    try{ data = JSON.parse(raw); }catch(e){}
+  }
+  if (!data.palaces) data.palaces = [];
+  if (!data.rooms) data.rooms = [];
+  if (!data.items) data.items = [];
+}
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  syncUserData();
+}
+
+// --- Helpers ---
+function uuid(){
+  return 'mp-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,8);
+}
+function esc(s){
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+function toast(msg, good){
+  $toast.textContent = msg;
+  $toast.className = 'toast show' + (good ? ' good' : '');
+  clearTimeout($toast._t);
+  $toast._t = setTimeout(function(){ $toast.className = 'toast'; }, 1800);
+}
+function formatDate(iso){
+  if (!iso) return '';
+  var d = new Date(iso);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+// --- Navigation ---
+var currentView = 'palaces';
+function setView(view){
+  currentView = view;
+  Object.keys(panels).forEach(function(k){ panels[k].classList.remove('active'); });
+  panels[view].classList.add('active');
+
+  if (view === 'palaces'){
+    $btnBack.style.display = 'none';
+    $fabAdd.style.display = 'flex';
+    $fabAdd.textContent = '+';
+    $headerTitle.textContent = '记忆宫殿';
+    document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.toggle('active', n.dataset.tab === 'palaces'); });
+    renderPalaces();
+  } else if (view === 'detail'){
+    $btnBack.style.display = '';
+    $fabAdd.style.display = 'flex';
+    $fabAdd.textContent = '+';
+    document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.toggle('active', n.dataset.tab === 'palaces'); });
+    renderDetail();
+  } else if (view === 'canvas'){
+    $btnBack.style.display = '';
+    $fabAdd.style.display = 'flex';
+    $fabAdd.textContent = '+';
+    document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.toggle('active', n.dataset.tab === 'palaces'); });
+    renderCanvas();
+  } else if (view === 'review'){
+    $btnBack.style.display = 'none';
+    $fabAdd.style.display = 'none';
+    $headerTitle.textContent = '复习模式';
+    document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.toggle('active', n.dataset.tab === 'review'); });
+    renderReviewSetup();
+  } else if (view === 'profile'){
+    $btnBack.style.display = 'none';
+    $fabAdd.style.display = 'none';
+    $headerTitle.textContent = '我的';
+    document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.toggle('active', n.dataset.tab === 'profile'); });
+    renderProfile();
+  }
+}
+
+// --- Modal ---
+function showModal(title, bodyHTML, onSave, onDelete){
+  var html = '<h2>'+esc(title)+'</h2>'+bodyHTML;
+  html += '<div class="modal-actions">';
+  if (onDelete) html += '<button class="btn btn-red btn-sm" id="modalDelete">删除</button>';
+  html += '<button class="btn btn-ghost btn-sm" id="modalCancel">取消</button>';
+  html += '<button class="btn btn-green btn-sm" id="modalSave">保存</button>';
+  html += '</div>';
+  $modalContent.innerHTML = html;
+  $modalOverlay.style.display = 'flex';
+  $modalOverlay.onclick = function(e){ if (e.target === $modalOverlay) closeModal(); };
+  document.getElementById('modalCancel').onclick = closeModal;
+  document.getElementById('modalSave').onclick = function(){
+    if (onSave) onSave();
+    closeModal();
+  };
+  if (onDelete){
+    document.getElementById('modalDelete').onclick = function(){
+      if (confirm('确认删除？此操作不可撤销。')){
+        onDelete();
+        closeModal();
+      }
+    };
+  }
+}
+function closeModal(){ $modalOverlay.style.display = 'none'; }
+
+// --- FAB ---
+$fabAdd.addEventListener('click', function(){
+  if (currentView === 'palaces') showPalaceModal();
+  else if (currentView === 'detail') showRoomModal();
+  else if (currentView === 'canvas') showItemModal();
+});
+
+// --- Panel: Palaces ---
+function renderPalaces(){
+  var html = '';
+  if (data.palaces.length === 0){
+    html = '<div class="empty"><div class="empty-icon">◈</div><div class="empty-text">还没有记忆宫殿</div><div class="empty-sub">点击右下角 + 创建第一座宫殿</div></div>';
+  } else {
+    data.palaces.forEach(function(p){
+      var roomCount = data.rooms.filter(function(r){ return r.palaceId === p.id; }).length;
+      html += '<div class="card" onclick="enterPalace(\''+p.id+'\')">';
+      html += '<div class="card-title">'+esc(p.name)+'</div>';
+      if (p.description) html += '<div class="card-desc">'+esc(p.description)+'</div>';
+      html += '<div class="card-meta">'+roomCount+' 个房间 · '+formatDate(p.createdAt)+'</div>';
+      html += '</div>';
+    });
+  }
+  panels.palaces.innerHTML = html;
+}
+
+function showPalaceModal(editPalace){
+  var isEdit = !!editPalace;
+  var name = editPalace ? editPalace.name : '';
+  var desc = editPalace ? editPalace.description || '' : '';
+  var body = '<div class="field"><label>宫殿名称</label><input type="text" id="pname" value="'+esc(name)+'" maxlength="30" placeholder="例如：中国历史"></div>';
+  body += '<div class="field"><label>描述（可选）</label><textarea id="pdesc" placeholder="这个宫殿的用途...">'+esc(desc)+'</textarea></div>';
+
+  showModal(isEdit ? '编辑宫殿' : '新建宫殿', body,
+    function(){
+      var n = document.getElementById('pname').value.trim();
+      var d = document.getElementById('pdesc').value.trim();
+      if (!n) { toast('请输入名称'); return; }
+      if (isEdit){
+        editPalace.name = n;
+        editPalace.description = d;
+      } else {
+        data.palaces.push({ id: uuid(), name: n, description: d, createdAt: new Date().toISOString() });
+      }
+      save();
+      renderPalaces();
+      toast(isEdit ? '已更新' : '宫殿已创建', true);
+    },
+    isEdit ? function(){
+      data.palaces = data.palaces.filter(function(p){ return p.id !== editPalace.id; });
+      data.rooms = data.rooms.filter(function(r){ return r.palaceId !== editPalace.id; });
+      data.items = data.items.filter(function(i){ return i.palaceId !== editPalace.id; });
+      save();
+      renderPalaces();
+      toast('已删除');
+    } : null
+  );
+}
+
+function enterPalace(id){
+  currentPalaceId = id;
+  setView('detail');
+}
+
+// --- Panel: Palace Detail (Rooms) ---
+function renderDetail(){
+  var palace = data.palaces.find(function(p){ return p.id === currentPalaceId; });
+  if (!palace) { setView('palaces'); return; }
+  $headerTitle.textContent = palace.name;
+
+  var rooms = data.rooms.filter(function(r){ return r.palaceId === currentPalaceId; }).sort(function(a,b){ return a.order - b.order; });
+  var html = '<div class="card" style="cursor:default;margin-bottom:16px;">';
+  html += '<div class="card-title">'+esc(palace.name)+'</div>';
+  if (palace.description) html += '<div class="card-desc">'+esc(palace.description)+'</div>';
+  html += '<button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="showPalaceModal(findPalace(\''+palace.id+'\'))">编辑宫殿</button>';
+  html += '</div>';
+
+  if (rooms.length === 0){
+    html += '<div class="empty"><div class="empty-text">还没有房间</div><div class="empty-sub">点击右下角 + 添加房间</div></div>';
+  } else {
+    rooms.forEach(function(r, idx){
+      var itemCount = data.items.filter(function(i){ return i.roomId === r.id; }).length;
+      html += '<div class="card" onclick="enterRoom(\''+r.id+'\')">';
+      html += '<div class="card-title">房间 '+(idx+1)+': '+esc(r.name)+'</div>';
+      html += '<div class="card-meta">'+itemCount+' 个记忆桩</div>';
+      html += '</div>';
+    });
+  }
+  panels.detail.innerHTML = html;
+}
+
+function showRoomModal(editRoom){
+  var isEdit = !!editRoom;
+  var name = editRoom ? editRoom.name : '';
+  var body = '<div class="field"><label>房间名称</label><input type="text" id="rname" value="'+esc(name)+'" maxlength="20" placeholder="例如：客厅 / 唐朝"></div>';
+
+  showModal(isEdit ? '编辑房间' : '新建房间', body,
+    function(){
+      var n = document.getElementById('rname').value.trim();
+      if (!n) { toast('请输入名称'); return; }
+      if (isEdit){
+        editRoom.name = n;
+      } else {
+        var maxOrder = 0;
+        data.rooms.forEach(function(r){ if (r.palaceId === currentPalaceId && r.order > maxOrder) maxOrder = r.order; });
+        data.rooms.push({ id: uuid(), palaceId: currentPalaceId, name: n, order: maxOrder + 1 });
+      }
+      save();
+      renderDetail();
+      toast(isEdit ? '已更新' : '房间已添加', true);
+    },
+    isEdit ? function(){
+      data.rooms = data.rooms.filter(function(r){ return r.id !== editRoom.id; });
+      data.items = data.items.filter(function(i){ return i.roomId !== editRoom.id; });
+      save();
+      renderDetail();
+      toast('已删除');
+    } : null
+  );
+}
+
+function enterRoom(id){
+  currentRoomId = id;
+  setView('canvas');
+}
+
+// --- Panel: Room Canvas ---
+function renderCanvas(){
+  var room = data.rooms.find(function(r){ return r.id === currentRoomId; });
+  if (!room) { setView('detail'); return; }
+  // Ensure landmarks array exists
+  if (!room.landmarks) room.landmarks = [];
+
+  var palace = data.palaces.find(function(p){ return p.id === currentPalaceId; });
+  $headerTitle.textContent = (palace ? palace.name + ' · ' : '') + room.name;
+
+  var items = data.items.filter(function(i){ return i.roomId === currentRoomId; });
+  var html = '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">';
+  html += '<button class="btn btn-ghost btn-sm" onclick="showRoomModal(findRoom(\''+room.id+'\'))">编辑房间</button>';
+  html += '<button class="btn btn-ghost btn-sm" onclick="addLandmark()">+ 放置参照物</button>';
+  html += '</div>';
+
+  html += '<div class="spatial-canvas" id="canvasArea">';
+  html += '<div class="canvas-crosshair"></div>';
+
+  // Render landmarks
+  room.landmarks.forEach(function(lm){
+    html += '<div style="position:absolute;left:'+(lm.x*100)+'%;top:'+(lm.y*100)+'%;transform:translate(-50%,-50%);pointer-events:none;text-align:center;">';
+    html += '<div style="font-size:1.5rem;opacity:0.5;">'+esc(lm.icon)+'</div>';
+    html += '<div style="font-size:0.6rem;color:var(--muted);margin-top:-2px;">'+esc(lm.name)+'</div>';
+    html += '</div>';
+  });
+
+  // Render items
+  items.forEach(function(item){
+    var color = item.colorTag || COLOR_TAGS[0];
+    var label = item.title.slice(0, 3);
+    html += '<div class="locus-marker" style="left:'+(item.x*100)+'%;top:'+(item.y*100)+'%;background:'+color+';" data-item-id="'+item.id+'" onclick="event.stopPropagation();editItem(\''+item.id+'\')" title="'+esc(item.title)+'">'+esc(label)+'<span class="marker-label">'+esc(item.title)+'</span></div>';
+  });
+  html += '</div>';
+  html += '<div style="text-align:center;font-size:0.7rem;color:var(--muted);margin-top:4px;">点击空白处添加记忆桩 · 点击桩查看/编辑</div>';
+
+  // Landmark list with delete
+  if (room.landmarks.length > 0){
+    html += '<div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap;">';
+    room.landmarks.forEach(function(lm, idx){
+      html += '<div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:16px;padding:3px 10px 3px 6px;font-size:0.75rem;display:inline-flex;align-items:center;gap:4px;">'+lm.icon+' '+esc(lm.name)+' <span onclick="removeLandmark(\''+lm.id+'\')" style="cursor:pointer;color:var(--red);font-size:0.85rem;margin-left:2px;" title="删除参照物">×</span></div>';
+    });
+    html += '</div>';
+  }
+
+  panels.canvas.innerHTML = html;
+
+  // Click blank area to add item at position
+  document.getElementById('canvasArea').addEventListener('click', function(e){
+    if (e.target !== this) return;
+    var rect = this.getBoundingClientRect();
+    var x = (e.clientX - rect.left) / rect.width;
+    var y = (e.clientY - rect.top) / rect.height;
+    showItemModal(null, x, y);
+  });
+}
+
+// --- Add landmark ---
+function addLandmark(){
+  var html = '<div class="field"><label>参照物类型</label><div style="display:flex;gap:6px;flex-wrap:wrap;">';
+  LANDMARK_TYPES.forEach(function(lt, i){
+    html += '<button class="btn btn-ghost btn-sm" onclick="selectLandmarkType('+i+')" style="font-size:1.2rem;padding:6px 8px;" id="ltBtn'+i+'">'+lt.icon+' '+lt.name+'</button>';
+  });
+  html += '</div></div>';
+  html += '<div class="field"><label>位置 X (0-100)</label><input type="number" id="lmx" value="50" min="0" max="100"></div>';
+  html += '<div class="field"><label>位置 Y (0-100)</label><input type="number" id="lmy" value="50" min="0" max="100"></div>';
+
+  window._landmarkTypeIdx = 0;
+  showModal('放置参照物', html, function(){
+    var x = parseInt(document.getElementById('lmx').value) / 100;
+    var y = parseInt(document.getElementById('lmy').value) / 100;
+    var lt = LANDMARK_TYPES[window._landmarkTypeIdx || 0];
+    var room = data.rooms.find(function(r){ return r.id === currentRoomId; });
+    if (!room) return;
+    if (!room.landmarks) room.landmarks = [];
+    room.landmarks.push({ id: uuid(), name: lt.name, icon: lt.icon, x: x, y: y });
+    save();
+    renderCanvas();
+    toast('参照物已放置', true);
+  });
+}
+
+function selectLandmarkType(idx){
+  window._landmarkTypeIdx = idx;
+  document.querySelectorAll('[id^="ltBtn"]').forEach(function(b){ b.style.borderColor = 'var(--border)'; });
+  var btn = document.getElementById('ltBtn'+idx);
+  if (btn) btn.style.borderColor = 'var(--green)';
+}
+
+function removeLandmark(id){
+  var room = data.rooms.find(function(r){ return r.id === currentRoomId; });
+  if (!room || !room.landmarks) return;
+  room.landmarks = room.landmarks.filter(function(l){ return l.id !== id; });
+  save();
+  renderCanvas();
+  toast('参照物已移除');
+}
+
+window.addLandmark = function(){ addLandmark(); };
+window.selectLandmarkType = function(i){ selectLandmarkType(i); };
+window.removeLandmark = function(id){ removeLandmark(id); };
+
+function showItemModal(editItem, presetX, presetY){
+  var isEdit = !!editItem;
+  var title = isEdit ? editItem.title : '';
+  var desc = isEdit ? (editItem.description || '') : '';
+  var x = isEdit ? editItem.x : (presetX || 0.5);
+  var y = isEdit ? editItem.y : (presetY || 0.5);
+  var colorIdx = 0;
+  if (isEdit && editItem.colorTag) {
+    colorIdx = COLOR_TAGS.indexOf(editItem.colorTag);
+    if (colorIdx < 0) colorIdx = 0;
+  }
+
+  var body = '<div class="field"><label>标题</label><input type="text" id="ititle" value="'+esc(title)+'" maxlength="30" placeholder="例如：唐太宗"></div>';
+  body += '<div class="field"><label>描述</label><textarea id="idesc" placeholder="要记住的内容...">'+esc(desc)+'</textarea></div>';
+  body += '<div class="field"><label>颜色标签</label><div class="color-picker">';
+  COLOR_TAGS.forEach(function(c, i){
+    body += '<div class="color-dot'+ (i===colorIdx?' selected':'') +'" style="background:'+c+';color:'+c+';" data-idx="'+i+'" onclick="selectColor(this,'+i+')"></div>';
+  });
+  body += '</div></div>';
+  body += '<div class="field"><label>位置 X (0-100)</label><input type="number" id="iposx" value="'+Math.round(x*100)+'" min="0" max="100"></div>';
+  body += '<div class="field"><label>位置 Y (0-100)</label><input type="number" id="iposy" value="'+Math.round(y*100)+'" min="0" max="100"></div>';
+  body += '<div class="field"><label>图片（可选）</label>';
+  if (isEdit && editItem.imageBase64){
+    body += '<img class="img-preview show" id="imgPreview" src="'+editItem.imageBase64+'">';
+  } else {
+    body += '<img class="img-preview" id="imgPreview">';
+  }
+  body += '<button class="btn btn-camera btn-sm" id="btnPhoto" style="margin-top:6px;">📷 拍照/选择图片</button>';
+  body += '</div>';
+
+  window._selectedColor = COLOR_TAGS[colorIdx];
+  showModal(isEdit ? '编辑记忆桩' : '新建记忆桩', body,
+    function(){
+      var t = document.getElementById('ititle').value.trim();
+      var d = document.getElementById('idesc').value.trim();
+      var nx = parseInt(document.getElementById('iposx').value) / 100;
+      var ny = parseInt(document.getElementById('iposy').value) / 100;
+      if (!t) { toast('请输入标题'); return; }
+      if (isNaN(nx) || isNaN(ny) || nx < 0 || nx > 1 || ny < 0 || ny > 1) { toast('位置需在0-100范围内'); return; }
+
+      if (isEdit){
+        editItem.title = t;
+        editItem.description = d;
+        editItem.x = nx;
+        editItem.y = ny;
+        editItem.colorTag = window._selectedColor || COLOR_TAGS[0];
+      } else {
+        data.items.push({
+          id: uuid(), roomId: currentRoomId, palaceId: currentPalaceId,
+          title: t, description: d, x: nx, y: ny, colorTag: (window._selectedColor || COLOR_TAGS[0]),
+          imageBase64: window._pendingImage || ''
+        });
+      }
+      window._pendingImage = '';
+      save();
+      renderCanvas();
+      toast(isEdit ? '已更新' : '记忆桩已创建', true);
+    },
+    isEdit ? function(){
+      data.items = data.items.filter(function(i){ return i.id !== editItem.id; });
+      save();
+      renderCanvas();
+      toast('已删除');
+    } : null
+  );
+
+  // Photo button
+  setTimeout(function(){
+    var btnP = document.getElementById('btnPhoto');
+    var imgP = document.getElementById('imgPreview');
+    if (!btnP) return;
+
+    // Load existing preview
+    if (isEdit && editItem.imageBase64){
+      imgP.classList.add('show');
+      imgP.src = editItem.imageBase64;
+      window._pendingImage = editItem.imageBase64;
+    } else {
+      window._pendingImage = '';
+    }
+
+    btnP.addEventListener('click', function(){
+      var input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = function(){
+        var file = input.files[0];
+        if (!file) return;
+        compressImage(file, function(b64){
+          window._pendingImage = b64;
+          imgP.src = b64;
+          imgP.classList.add('show');
+        });
+      };
+      input.click();
+    });
+  }, 50);
+}
+
+function editItem(id){
+  var item = data.items.find(function(i){ return i.id === id; });
+  if (item) showItemModal(item);
+}
+
+function selectColor(dot, idx){
+  document.querySelectorAll('.color-dot').forEach(function(d){ d.classList.remove('selected'); });
+  dot.classList.add('selected');
+  window._selectedColor = COLOR_TAGS[idx];
+}
+
+// --- Photo compression ---
+function compressImage(file, cb){
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var img = new Image();
+    img.onload = function(){
+      var maxW = 600;
+      var w = img.width, h = img.height;
+      if (w > maxW){ h = h * maxW / w; w = maxW; }
+      var c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      var ctx = c.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      cb(c.toDataURL('image/jpeg', 0.7));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// --- Panel: Review ---
+function renderReviewSetup(){
+  var html = '<h2 style="font-size:1rem;font-weight:700;margin-bottom:16px;">选择要复习的内容</h2>';
+  if (data.palaces.length === 0){
+    html += '<div class="empty"><div class="empty-text">还没有宫殿</div><div class="empty-sub">先去创建宫殿和记忆桩再来复习</div></div>';
+  } else {
+    data.palaces.forEach(function(p){
+      var rooms = data.rooms.filter(function(r){ return r.palaceId === p.id; });
+      var totalItems = 0;
+      rooms.forEach(function(r){ totalItems += data.items.filter(function(i){ return i.roomId === r.id; }).length; });
+      if (totalItems === 0) return;
+      html += '<div class="card" onclick="startReview(\''+p.id+'\')">';
+      html += '<div class="card-title">'+esc(p.name)+'</div>';
+      html += '<div class="card-meta">'+rooms.length+' 个房间 · '+totalItems+' 个记忆桩</div>';
+      html += '</div>';
+    });
+  }
+  panels.review.innerHTML = html;
+}
+
+function startReview(palaceId){
+  currentPalaceId = palaceId;
+  var rooms = data.rooms.filter(function(r){ return r.palaceId === palaceId; });
+  reviewItems = [];
+  rooms.forEach(function(r){
+    var items = data.items.filter(function(i){ return i.roomId === r.id; });
+    items.forEach(function(i){ reviewItems.push(i); });
+  });
+  if (reviewItems.length === 0){ toast('该宫殿没有记忆桩'); return; }
+  // Shuffle
+  for (var i = reviewItems.length - 1; i > 0; i--){
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = reviewItems[i]; reviewItems[i] = reviewItems[j]; reviewItems[j] = tmp;
+  }
+  reviewIndex = 0;
+  reviewRemembered = 0;
+  renderReviewCard();
+}
+
+function renderReviewCard(){
+  if (reviewIndex >= reviewItems.length){
+    var total = reviewItems.length;
+    var pct = total > 0 ? Math.round(reviewRemembered / total * 100) : 0;
+    var html = '<div class="review-summary">';
+    html += '<div class="big-num">'+pct+'%</div>';
+    html += '<div style="margin:8px 0;color:var(--text-secondary);">记住了 '+reviewRemembered+' / '+total+'</div>';
+    if (pct >= 80){
+      html += '<div style="color:var(--green);font-weight:600;">非常棒！</div>';
+    } else if (pct >= 60){
+      html += '<div style="color:var(--amber);font-weight:600;">还不错，再巩固一下</div>';
+    } else {
+      html += '<div style="color:var(--red);font-weight:600;">继续加油！</div>';
+    }
+    html += '<button class="btn btn-green" onclick="setView(\'review\')" style="margin-top:20px;">返回</button>';
+    html += '</div>';
+    panels.review.innerHTML = html;
+    return;
+  }
+  var item = reviewItems[reviewIndex];
+  var room = data.rooms.find(function(r){ return r.id === item.roomId; });
+  var landmarks = room && room.landmarks ? room.landmarks : [];
+  var progress = (reviewIndex / reviewItems.length * 100);
+
+  // Find nearest landmarks for spatial description
+  var nearest = [];
+  landmarks.forEach(function(lm){
+    var dx = lm.x - item.x, dy = lm.y - item.y;
+    var dist = Math.sqrt(dx*dx + dy*dy);
+    nearest.push({ landmark: lm, dist: dist, dx: dx, dy: dy });
+  });
+  nearest.sort(function(a,b){ return a.dist - b.dist; });
+  var topRefs = nearest.slice(0, 2);
+
+  // Build spatial description
+  var posDesc = '';
+  if (topRefs.length > 0){
+    var parts = [];
+    topRefs.forEach(function(ref){
+      var hor = ref.dx < -0.03 ? '右边' : (ref.dx > 0.03 ? '左边' : '');
+      var ver = ref.dy < -0.03 ? '下方' : (ref.dy > 0.03 ? '上方' : '');
+      var dir = hor + ver || '附近';
+      parts.push('<strong>'+esc(ref.landmark.icon)+esc(ref.landmark.name)+'</strong>'+dir);
+    });
+    posDesc = '在'+parts.join('，')+'的位置';
+  } else {
+    posDesc = '在'+(room ? esc(room.name) : '')+'的这个位置';
+  }
+
+  var html = '<div class="review-progress"><div class="fill" style="width:'+progress+'%"></div></div>';
+  html += '<div style="text-align:center;font-size:0.75rem;color:var(--muted);margin-bottom:12px;">'+ (reviewIndex+1) +' / '+reviewItems.length+' · '+esc(room?room.name:'')+'</div>';
+
+  // Mini canvas with landmarks and target area
+  html += '<div class="review-card">';
+  html += '<div class="review-canvas">';
+  landmarks.forEach(function(lm){
+    html += '<div class="landmark-icon" style="left:'+(lm.x*100)+'%;top:'+(lm.y*100)+'%;">'+lm.icon+'</div>';
+    html += '<div class="landmark-label" style="left:'+(lm.x*100)+'%;top:'+(lm.y*100)+'%;">'+esc(lm.name)+'</div>';
+  });
+  // Target indicator
+  html += '<div class="review-target" style="left:'+(item.x*100)+'%;top:'+(item.y*100)+'%;"></div>';
+  html += '</div>';
+
+  html += '<div class="review-position-desc">'+posDesc+'<br><span style="font-size:0.75rem;">这个位置记的是什么？</span></div>';
+
+  html += '<div class="revealed-content" id="revealedContent">';
+  html += '<div class="item-title" style="color:'+(item.colorTag||COLOR_TAGS[0])+';">'+esc(item.title)+'</div>';
+  if (item.description) html += '<div class="item-desc">'+esc(item.description)+'</div>';
+  if (item.imageBase64) html += '<img class="item-image" src="'+item.imageBase64+'" style="max-width:100%;max-height:240px;border-radius:var(--radius-sm);margin-top:8px;">';
+  html += '</div>';
+  html += '<div style="margin-top:16px;display:flex;gap:10px;justify-content:center;">';
+  html += '<button class="btn btn-green" id="btnReveal" onclick="revealCard()">揭晓答案</button>';
+  html += '</div>';
+  html += '<div id="reviewActions" style="margin-top:12px;display:none;gap:10px;justify-content:center;">';
+  html += '<button class="btn btn-green btn-sm" onclick="reviewResult(true)">记住了</button>';
+  html += '<button class="btn btn-red btn-sm" onclick="reviewResult(false)">没记住</button>';
+  html += '</div>';
+  html += '</div>';
+  panels.review.innerHTML = html;
+}
+
+function revealCard(){
+  document.getElementById('revealedContent').classList.add('show');
+  document.getElementById('btnReveal').style.display = 'none';
+  document.getElementById('reviewActions').style.display = 'flex';
+}
+
+function reviewResult(remembered){
+  if (remembered) reviewRemembered++;
+  reviewIndex++;
+  renderReviewCard();
+}
+
+// --- Panel: Profile ---
+function renderProfile(){
+  var pc = data.palaces.length;
+  var rc = data.rooms.length;
+  var ic = data.items.length;
+  var html = '<div class="card" style="text-align:center;cursor:default;">';
+  html += '<div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#059669,#10b981);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;color:#000;">KC</div>';
+  html += '<div style="font-size:1rem;font-weight:700;">'+esc(currentUser.name || currentUser.email)+'</div>';
+  html += '<div style="font-size:0.78rem;color:var(--muted);">'+esc(currentUser.email)+'</div>';
+  html += '</div>';
+  html += '<div class="card" style="cursor:default;display:flex;justify-content:space-around;text-align:center;">';
+  html += '<div><div style="font-size:1.3rem;font-weight:700;">'+pc+'</div><div style="font-size:0.7rem;color:var(--muted);">宫殿</div></div>';
+  html += '<div><div style="font-size:1.3rem;font-weight:700;">'+rc+'</div><div style="font-size:0.7rem;color:var(--muted);">房间</div></div>';
+  html += '<div><div style="font-size:1.3rem;font-weight:700;">'+ic+'</div><div style="font-size:0.7rem;color:var(--muted);">记忆桩</div></div>';
+  html += '</div>';
+  html += '<button class="btn btn-red" style="width:100%;margin-top:12px;" onclick="logout()">退出登录</button>';
+  panels.profile.innerHTML = html;
+}
+
+function logout(){
+  sessionStorage.removeItem('user');
+  localStorage.removeItem('kimi-remembered-user');
+  location.href = 'login.html';
+}
+
+// --- Tab Switching ---
+document.querySelectorAll('.nav-item').forEach(function(item){
+  item.addEventListener('click', function(){
+    currentPalaceId = null;
+    currentRoomId = null;
+    setView(item.dataset.tab);
+  });
+});
+
+// --- Back button ---
+$btnBack.addEventListener('click', function(){
+  if (currentView === 'detail'){
+    currentPalaceId = null;
+    setView('palaces');
+  } else if (currentView === 'canvas'){
+    currentRoomId = null;
+    setView('detail');
+  }
+});
+
+// --- Cloud Sync ---
+async function syncUserData(){
+  var headers = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' };
+  var uid = currentUser.id;
+
+  // Build encoded rows
+  var rows = [];
+  data.palaces.forEach(function(p){
+    rows.push({ user_id: uid, subject: '__MPALACE__|'+p.id+'|'+p.name+'|'+(p.description||'')+'|'+(p.createdAt||''), start_time: new Date().toISOString(), end_time: new Date().toISOString(), duration: 0 });
+  });
+  data.rooms.forEach(function(r){
+    rows.push({ user_id: uid, subject: '__MROOM__|'+r.id+'|'+r.palaceId+'|'+r.name+'|'+(r.order||0), start_time: new Date().toISOString(), end_time: new Date().toISOString(), duration: 0 });
+  });
+  data.items.forEach(function(i){
+    var desc = (i.description||'').slice(0, 400);
+    rows.push({ user_id: uid, subject: '__MITEM__|'+i.id+'|'+i.roomId+'|'+i.palaceId+'|'+i.x+'|'+i.y+'|'+i.title+'|'+desc+'|'+(i.colorTag||''), start_time: new Date().toISOString(), end_time: new Date().toISOString(), duration: 0 });
+  });
+
+  try {
+    // Delete old sync entries for this user
+    await fetch(SUPABASE_URL + '/rest/v1/sessions?user_id=eq.' + uid + '&subject=like.__MPALACE__*&select=id', { method: 'DELETE', headers: headers });
+    await fetch(SUPABASE_URL + '/rest/v1/sessions?user_id=eq.' + uid + '&subject=like.__MROOM__*&select=id', { method: 'DELETE', headers: headers });
+    await fetch(SUPABASE_URL + '/rest/v1/sessions?user_id=eq.' + uid + '&subject=like.__MITEM__*&select=id', { method: 'DELETE', headers: headers });
+
+    // Insert new sync entries in batches
+    for (var i = 0; i < rows.length; i += 50){
+      var batch = rows.slice(i, i + 50);
+      await fetch(SUPABASE_URL + '/rest/v1/sessions', {
+        method: 'POST',
+        headers: Object.assign({}, headers, { 'Prefer': 'return=minimal' }),
+        body: JSON.stringify(batch)
+      });
+    }
+    console.log('[sync] synced', rows.length, 'entries');
+  } catch(e){
+    console.error('[sync] error:', e);
+  }
+}
+
+async function fetchRemote(){
+  var uid = currentUser.id;
+  var headers = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY };
+  var allRows = [];
+  // Fetch sync entries
+  for (var offset = 0; offset < 800; offset += 200){
+    var res = await fetch(SUPABASE_URL + '/rest/v1/sessions?user_id=eq.' + uid + '&select=subject&limit=200&offset='+offset, { headers: headers });
+    if (!res.ok) break;
+    var batch = await res.json();
+    if (batch.length === 0) break;
+    allRows = allRows.concat(batch);
+  }
+
+  var remotePalaces = {};
+  var remoteRooms = {};
+  var remoteItems = {};
+
+  allRows.forEach(function(row){
+    var s = row.subject || '';
+    if (s.startsWith('__MPALACE__')){
+      var parts = s.split('|');
+      if (parts.length >= 5){
+        remotePalaces[parts[1]] = { id: parts[1], name: parts[2], description: parts[3], createdAt: parts[4] };
+      }
+    } else if (s.startsWith('__MROOM__')){
+      var parts = s.split('|');
+      if (parts.length >= 5){
+        remoteRooms[parts[1]] = { id: parts[1], palaceId: parts[2], name: parts[3], order: parseInt(parts[4])||0 };
+      }
+    } else if (s.startsWith('__MITEM__')){
+      var parts = s.split('|');
+      if (parts.length >= 9){
+        remoteItems[parts[1]] = { id: parts[1], roomId: parts[2], palaceId: parts[3], x: parseFloat(parts[4])||0.5, y: parseFloat(parts[5])||0.5, title: parts[6], description: parts[7], colorTag: parts[8] };
+      }
+    }
+  });
+
+  // Merge remote into local (remote wins on conflict by id)
+  var localPalaceMap = {};
+  data.palaces.forEach(function(p){ localPalaceMap[p.id] = p; });
+  Object.keys(remotePalaces).forEach(function(id){
+    if (!localPalaceMap[id]) data.palaces.push(remotePalaces[id]);
+  });
+
+  var localRoomMap = {};
+  data.rooms.forEach(function(r){ localRoomMap[r.id] = r; });
+  Object.keys(remoteRooms).forEach(function(id){
+    if (!localRoomMap[id]) data.rooms.push(remoteRooms[id]);
+  });
+
+  var localItemMap = {};
+  data.items.forEach(function(i){ localItemMap[i.id] = i; });
+  Object.keys(remoteItems).forEach(function(id){
+    if (!localItemMap[id]) data.items.push(remoteItems[id]);
+  });
+
+  if (Object.keys(remotePalaces).length + Object.keys(remoteRooms).length + Object.keys(remoteItems).length > 0){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    console.log('[sync] merged remote data');
+  }
+}
+
+// --- Expose for inline onclick ---
+window.MPDATA = data;
+window.enterPalace = function(id){ enterPalace(id); };
+window.enterRoom = function(id){ enterRoom(id); };
+window.findPalace = function(id){ return data.palaces.find(function(p){return p.id===id;}); };
+window.findRoom = function(id){ return data.rooms.find(function(r){return r.id===id;}); };
+window.showPalaceModal = function(p){ showPalaceModal(p); };
+window.showRoomModal = function(r){ showRoomModal(r); };
+window.editItem = function(id){ editItem(id); };
+window.startReview = function(id){ startReview(id); };
+window.revealCard = function(){ revealCard(); };
+window.reviewResult = function(r){ reviewResult(r); };
+window.selectColor = function(d,i){ selectColor(d,i); };
+window.logout = function(){ logout(); };
+window.setView = function(v){ setView(v); };
+
+// --- Init ---
+async function init(){
+  load();
+  try { await fetchRemote(); } catch(e){ console.error('[init] fetch error:', e); }
+  setView('palaces');
+}
+init();
+})();
+</script>
+</body>
+</html>

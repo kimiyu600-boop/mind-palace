@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登录 — 记忆宫殿</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --green: #10b981; --green-hover: #34d399; --red: #f87171;
+  --bg: #09090b; --card: #18181b; --text: #fafafa; --muted: #71717a; --border: #27272a;
+}
+body {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text); min-height: 100vh;
+  display: flex; justify-content: center; align-items: center;
+  padding: 24px; -webkit-font-smoothing: antialiased;
+}
+.login-wrap {
+  width: 100%; max-width: 400px; background: var(--card);
+  border-radius: 16px; padding: 40px 32px 36px;
+  border: 1px solid var(--border); text-align: center;
+}
+.logo {
+  width: 48px; height: 48px; border-radius: 12px;
+  background: linear-gradient(135deg, #059669, #10b981);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; margin-bottom: 16px; font-weight: 700; color: #000;
+}
+.login-wrap h1 { font-size: 1.25rem; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.02em; }
+.login-wrap .sub { font-size: 0.8rem; color: var(--muted); margin-bottom: 28px; }
+
+.field { margin-bottom: 16px; text-align: left; }
+.field label { font-size: 0.7rem; font-weight: 600; color: var(--muted); display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
+.field input {
+  width: 100%; padding: 12px 16px; border: 1px solid var(--border);
+  border-radius: 10px; font-size: 0.95rem; outline: none; transition: all 0.2s;
+  background: #131316; font-weight: 500; color: var(--text);
+}
+.field input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(16,185,129,0.12); }
+
+.btn {
+  width: 100%; padding: 12px; border-radius: 12px; font-size: 0.95rem; font-weight: 600;
+  border: none; cursor: pointer; transition: all 0.15s; margin-top: 8px; letter-spacing: -0.01em;
+}
+.btn-primary { background: var(--green); color: #000; }
+.btn-primary:hover:not(:disabled) { background: var(--green-hover); }
+.btn-primary:active:not(:disabled) { transform: scale(0.97); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-ghost {
+  background: none; color: var(--muted); font-size: 0.8rem; margin-top: 12px; padding: 8px;
+}
+.btn-ghost:hover { color: var(--text); }
+
+.error-msg {
+  color: var(--red); font-size: 0.8rem; margin-top: 12px; padding: 8px 12px;
+  background: rgba(248,113,113,0.1); border-radius: 8px; display: none; text-align: center;
+}
+.success-msg {
+  color: var(--green); font-size: 0.8rem; margin-top: 12px; padding: 8px 12px;
+  background: rgba(16,185,129,0.1); border-radius: 8px; display: none; text-align: center;
+}
+
+.name-field.hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="login-wrap">
+  <div class="logo">KC</div>
+  <h1 id="modeTitle">登录</h1>
+  <div class="sub" id="modeSub">使用邮箱登录 记忆宫殿</div>
+
+  <div class="field">
+    <label>邮箱</label>
+    <input type="email" id="email" placeholder="输入邮箱地址" autocomplete="email">
+  </div>
+
+  <div class="field name-field hidden" id="nameField">
+    <label>名字</label>
+    <input type="text" id="name" placeholder="输入你的名字" maxlength="20" autocomplete="name">
+  </div>
+
+  <div class="field">
+    <label>密码</label>
+    <input type="password" id="password" placeholder="输入密码（至少4位）" autocomplete="current-password">
+  </div>
+
+  <div style="display:flex;align-items:center;gap:6px;margin:12px 0;font-size:0.85rem;color:var(--muted)">
+    <input type="checkbox" id="rememberMe" style="width:16px;height:16px;accent-color:var(--green)">
+    <label for="rememberMe" style="cursor:pointer;font-weight:500">记住登录</label>
+  </div>
+  <button class="btn btn-primary" id="btnSubmit">登 录</button>
+  <div class="error-msg" id="errorMsg"></div>
+  <div class="success-msg" id="successMsg"></div>
+  <button class="btn btn-ghost" id="btnToggle">还没有账号？点此注册</button>
+</div>
+
+<script>
+(function() {
+  var SUPABASE_URL = 'https://fdldkejfkvcymlzcmeub.supabase.co';
+  var SUPABASE_KEY = 'sb_publishable_0r9JoiUqOggGX7Cum1gjtQ_WEkBE2Sp';
+  var mode = 'login';
+
+  var emailEl = document.getElementById('email');
+  var nameEl = document.getElementById('name');
+  var passwordEl = document.getElementById('password');
+  var nameFieldEl = document.getElementById('nameField');
+  var btnSubmit = document.getElementById('btnSubmit');
+  var btnToggle = document.getElementById('btnToggle');
+  var modeTitle = document.getElementById('modeTitle');
+  var modeSub = document.getElementById('modeSub');
+  var errorMsg = document.getElementById('errorMsg');
+  var successMsg = document.getElementById('successMsg');
+
+  console.log('[login] page ready, mode:', mode);
+
+  // Auto-login check
+  (function() {
+    var saved = localStorage.getItem('kimi-remembered-user');
+    if (saved) {
+      try {
+        var user = JSON.parse(saved);
+        sessionStorage.setItem('user', JSON.stringify(user));
+        location.href = 'mindpalace.html';
+        return;
+      } catch(e) {}
+    }
+    // Also check if already logged in via session
+    if (sessionStorage.getItem('user')) {
+      location.href = 'mindpalace.html';
+    }
+  })();
+
+  function saveUser(user) {
+    sessionStorage.setItem('user', JSON.stringify(user));
+    if (document.getElementById('rememberMe').checked) {
+      localStorage.setItem('kimi-remembered-user', JSON.stringify(user));
+    }
+  }
+
+  function getDeviceInfo() {
+    var ua = navigator.userAgent;
+    if (/iPhone/.test(ua)) { return 'iOS | iPhone | ' + (ua.match(/Chrome|Firefox|Safari|Edge\/\d+/)?.[0] || 'Safari'); }
+    if (/iPad/.test(ua)) { return 'iPadOS | iPad | ' + (ua.match(/Chrome|Firefox|Safari|Edge\/\d+/)?.[0] || 'Safari'); }
+    if (/Android/.test(ua)) {
+      var m = ua.match(/; ([^;)]+)(?=;|\))/);
+      return 'Android | ' + (m ? m[1].trim() : 'Phone') + ' | ' + (ua.match(/Chrome|Firefox|Safari|Edge\/\d+/)?.[0] || 'Browser');
+    }
+    if (/Windows/.test(ua)) { return 'Windows | PC | ' + (ua.match(/Chrome|Firefox|Safari|Edge\/\d+/)?.[0] || 'Browser'); }
+    if (/Mac/.test(ua)) { return 'macOS | Mac | ' + (ua.match(/Chrome|Firefox|Safari|Edge\/\d+/)?.[0] || 'Safari'); }
+    return 'Unknown | Unknown | Unknown';
+  }
+
+  async function hashPassword(pwd) {
+    var data = new TextEncoder().encode(pwd);
+    var hash = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hash)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+  }
+
+  function showError(msg) {
+    console.error('[login]', msg);
+    errorMsg.textContent = msg;
+    errorMsg.style.display = '';
+    successMsg.style.display = 'none';
+  }
+
+  function showSuccess(msg) {
+    console.log('[login]', msg);
+    successMsg.textContent = msg;
+    successMsg.style.display = '';
+    errorMsg.style.display = 'none';
+  }
+
+  function setLoading(loading) {
+    btnSubmit.disabled = loading;
+    btnSubmit.textContent = loading ? '请稍候...' : (mode === 'login' ? '登 录' : '注 册');
+  }
+
+  function setMode(newMode) {
+    mode = newMode;
+    console.log('[login] mode:', mode);
+    if (mode === 'register') {
+      modeTitle.textContent = '注册';
+      modeSub.textContent = '创建账号加入 记忆宫殿';
+      btnSubmit.textContent = '注 册';
+      btnToggle.textContent = '已有账号？点此登录';
+      nameFieldEl.classList.remove('hidden');
+    } else {
+      modeTitle.textContent = '登录';
+      modeSub.textContent = '使用邮箱登录 记忆宫殿';
+      btnSubmit.textContent = '登 录';
+      btnToggle.textContent = '还没有账号？点此注册';
+      nameFieldEl.classList.add('hidden');
+    }
+    errorMsg.style.display = 'none';
+    successMsg.style.display = 'none';
+  }
+
+  // Toggle
+  btnToggle.addEventListener('click', function() {
+    setMode(mode === 'login' ? 'register' : 'login');
+  });
+
+  // Submit
+  btnSubmit.addEventListener('click', async function() {
+    var email = emailEl.value.trim();
+    var password = passwordEl.value;
+    var name = nameEl.value.trim();
+
+    errorMsg.style.display = 'none';
+    successMsg.style.display = 'none';
+
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showError('请输入正确的邮箱地址'); return; }
+    if (mode === 'register' && !name) { showError('请输入你的名字'); return; }
+    if (!password || password.length < 4) { showError('密码至少4位'); return; }
+
+    setLoading(true);
+    console.log('[login] submit, mode:', mode, 'email:', email);
+
+    try {
+      if (mode === 'register') {
+        // Check if email exists
+        var checkUrl = SUPABASE_URL + '/rest/v1/users?email=eq.' + encodeURIComponent(email) + '&select=id&limit=1';
+        var checkRes = await fetch(checkUrl, { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY } });
+        console.log('[login] check email status:', checkRes.status);
+
+        if (!checkRes.ok) {
+          var checkErr = await checkRes.text();
+          console.error('[login] check error:', checkErr);
+          throw new Error('网络错误（' + checkRes.status + '）');
+        }
+
+        var existing = await checkRes.json();
+        if (existing.length > 0) { showError('该邮箱已注册，请直接登录'); setLoading(false); return; }
+
+        // Register
+        var pHash = await hashPassword(password);
+        var deviceInfo = getDeviceInfo();
+        var body = JSON.stringify({ email: email, name: name, password_hash: pHash, device_info: deviceInfo });
+        console.log('[login] registering...');
+
+        var regRes = await fetch(SUPABASE_URL + '/rest/v1/users', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_KEY,
+            'Prefer': 'return=representation'
+          },
+          body: body
+        });
+        console.log('[login] register status:', regRes.status);
+
+        if (!regRes.ok) {
+          var regErr = await regRes.text();
+          console.error('[login] register error:', regErr);
+          throw new Error('注册失败（' + regRes.status + '）');
+        }
+
+        var users = await regRes.json();
+        console.log('[login] registered, user:', users[0].id);
+        showSuccess('注册成功，正在跳转...');
+        saveUser(users[0]);
+        setTimeout(function() { location.href = 'mindpalace.html'; }, 500);
+
+      } else {
+        // Login
+        var loginUrl = SUPABASE_URL + '/rest/v1/users?email=eq.' + encodeURIComponent(email) + '&select=*&limit=1';
+        var loginRes = await fetch(loginUrl, { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY } });
+        console.log('[login] login status:', loginRes.status);
+
+        if (!loginRes.ok) {
+          var loginErr = await loginRes.text();
+          console.error('[login] login error:', loginErr);
+          throw new Error('网络错误（' + loginRes.status + '）');
+        }
+
+        var users = await loginRes.json();
+        if (users.length === 0) { showError('账号不存在，请先注册'); setLoading(false); return; }
+
+        var pHash = await hashPassword(password);
+        if (pHash !== users[0].password_hash) { showError('密码错误'); setLoading(false); return; }
+
+        console.log('[login] login ok');
+        showSuccess('登录成功，正在跳转...');
+        saveUser(users[0]);
+        setTimeout(function() { location.href = 'mindpalace.html'; }, 500);
+      }
+    } catch (err) {
+      console.error('[login] exception:', err);
+      showError('操作失败：' + (err.message || '未知错误'));
+      setLoading(false);
+    }
+  });
+
+  // Enter key
+  passwordEl.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') btnSubmit.click();
+  });
+  emailEl.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') passwordEl.focus();
+  });
+  nameEl.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') passwordEl.focus();
+  });
+})();
+</script>
+</body>
+</html>
