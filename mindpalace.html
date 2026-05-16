@@ -58,11 +58,18 @@ body{
 .card{
   background:var(--card);border-radius:var(--radius-lg);padding:18px 16px;
   border:1px solid var(--border);margin-bottom:10px;transition:border-color .15s;cursor:pointer;
+  position:relative;
 }
 .card:hover{border-color:var(--border-subtle);}
-.card .card-title{font-size:0.95rem;font-weight:600;margin-bottom:4px;}
+.card .card-title{font-size:0.95rem;font-weight:600;margin-bottom:4px;padding-right:28px;}
 .card .card-desc{font-size:0.78rem;color:var(--muted);margin-bottom:2px;}
 .card .card-meta{font-size:0.7rem;color:var(--text-secondary);}
+.card .card-del{
+  position:absolute;top:12px;right:12px;width:26px;height:26px;border-radius:50%;
+  border:none;background:none;color:var(--muted);font-size:1.1rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all .15s;z-index:5;
+}
+.card .card-del:hover{color:var(--red);background:rgba(248,113,113,0.12);}
 
 /* Buttons */
 .btn{
@@ -155,19 +162,32 @@ body{
 .canvas-crosshair::before{left:0;right:0;top:50%;height:1px;}
 .canvas-crosshair::after{top:0;bottom:0;left:50%;width:1px;}
 
-.locus-marker{
-  position:absolute;transform:translate(-50%,-50%);
-  width:40px;height:40px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-size:0.7rem;font-weight:700;color:#fff;cursor:pointer;
-  border:2px solid rgba(255,255,255,0.25);transition:all .15s;
-  box-shadow:0 2px 8px rgba(0,0,0,0.4);z-index:1;text-shadow:0 1px 2px rgba(0,0,0,0.5);
-}
-.locus-marker:hover{transform:translate(-50%,-50%) scale(1.15);z-index:2;border-color:#fff;}
-.locus-marker .marker-label{
-  position:absolute;top:100%;margin-top:4px;white-space:nowrap;
-  font-size:0.7rem;font-weight:500;color:var(--text);text-shadow:0 1px 4px rgba(0,0,0,0.8);
-}
+	.item-marker-wrap{
+	  position:absolute;transform:translate(-50%,-50%);z-index:1;
+	  display:flex;flex-direction:column;align-items:center;
+	  cursor:pointer;
+	}
+	.locus-marker{
+	  width:40px;height:40px;border-radius:50%;
+	  display:flex;align-items:center;justify-content:center;
+	  font-size:0.7rem;font-weight:700;color:#fff;
+	  border:2px solid rgba(255,255,255,0.25);transition:all .15s;
+	  box-shadow:0 2px 8px rgba(0,0,0,0.4);text-shadow:0 1px 2px rgba(0,0,0,0.5);
+	}
+	.locus-marker:hover{transform:scale(1.15);z-index:2;border-color:#fff;}
+	.marker-label{
+	  margin-top:2px;white-space:nowrap;
+	  font-size:0.65rem;font-weight:500;color:var(--text);text-shadow:0 1px 4px rgba(0,0,0,0.8);
+	}
+	.marker-del{
+	  position:absolute;top:-7px;right:-7px;
+	  width:18px;height:18px;border-radius:50%;
+	  background:var(--red);color:#fff;border:none;
+	  font-size:0.7rem;line-height:1;cursor:pointer;
+	  display:flex;align-items:center;justify-content:center;
+	  transition:all .15s;z-index:3;
+	}
+	.marker-del:hover{transform:scale(1.2);}
 
 /* Color tag picker */
 .color-picker{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;}
@@ -438,6 +458,7 @@ function renderPalaces(){
     data.palaces.forEach(function(p){
       var roomCount = data.rooms.filter(function(r){ return r.palaceId === p.id; }).length;
       html += '<div class="card" onclick="enterPalace(\''+p.id+'\')">';
+      html += '<button class="card-del" onclick="event.stopPropagation();deletePalace(\''+p.id+'\')" title="删除">×</button>';
       html += '<div class="card-title">'+esc(p.name)+'</div>';
       if (p.description) html += '<div class="card-desc">'+esc(p.description)+'</div>';
       html += '<div class="card-meta">'+roomCount+' 个房间 · '+formatDate(p.createdAt)+'</div>';
@@ -504,6 +525,7 @@ function renderDetail(){
     rooms.forEach(function(r, idx){
       var itemCount = data.items.filter(function(i){ return i.roomId === r.id; }).length;
       html += '<div class="card" onclick="enterRoom(\''+r.id+'\')">';
+	      html += '<button class="card-del" onclick="event.stopPropagation();deleteRoom(\''+r.id+'\')" title="删除">×</button>';
       html += '<div class="card-title">房间 '+(idx+1)+': '+esc(r.name)+'</div>';
       html += '<div class="card-meta">'+itemCount+' 个记忆桩</div>';
       html += '</div>';
@@ -578,10 +600,14 @@ function renderCanvas(){
   items.forEach(function(item){
     var color = item.colorTag || COLOR_TAGS[0];
     var label = item.title.slice(0, 3);
-    html += '<div class="locus-marker" style="left:'+(item.x*100)+'%;top:'+(item.y*100)+'%;background:'+color+';" data-item-id="'+item.id+'" onclick="event.stopPropagation();editItem(\''+item.id+'\')" title="'+esc(item.title)+'">'+esc(label)+'<span class="marker-label">'+esc(item.title)+'</span></div>';
+    html += '<div class="item-marker-wrap" style="left:'+(item.x*100)+'%;top:'+(item.y*100)+'%;">';
+    html += '<div class="locus-marker" style="background:'+color+';" data-item-id="'+item.id+'" onclick="event.stopPropagation();editItem(\''+item.id+'\')" title="'+esc(item.title)+'">'+esc(label)+'</div>';
+    html += '<span class="marker-label">'+esc(item.title)+'</span>';
+    html += '<button class="marker-del" onclick="event.stopPropagation();deleteItem(\''+item.id+'\')" title="删除记忆桩">×</button>';
+    html += '</div>';
   });
   html += '</div>';
-  html += '<div style="text-align:center;font-size:0.7rem;color:var(--muted);margin-top:4px;">点击空白处添加记忆桩 · 点击桩查看/编辑</div>';
+  html += '<div style="text-align:center;font-size:0.7rem;color:var(--muted);margin-top:4px;">点击空白处添加记忆桩 · 点击桩编辑 · × 删除</div>';
 
   // Landmark list with delete
   if (room.landmarks.length > 0){
@@ -648,6 +674,35 @@ function removeLandmark(id){
 window.addLandmark = function(){ addLandmark(); };
 window.selectLandmarkType = function(i){ selectLandmarkType(i); };
 window.removeLandmark = function(id){ removeLandmark(id); };
+
+function deletePalace(id){
+  if (!confirm('确认删除这座宫殿及其中所有房间和记忆桩？')) return;
+  data.palaces = data.palaces.filter(function(p){ return p.id !== id; });
+  data.rooms = data.rooms.filter(function(r){ return r.palaceId !== id; });
+  data.items = data.items.filter(function(i){ return i.palaceId !== id; });
+  save();
+  renderPalaces();
+  toast('已删除');
+}
+function deleteRoom(id){
+  if (!confirm('确认删除这个房间及其中所有记忆桩？')) return;
+  data.rooms = data.rooms.filter(function(r){ return r.id !== id; });
+  data.items = data.items.filter(function(i){ return i.roomId !== id; });
+  save();
+  if (currentView === 'detail') renderDetail();
+  toast('已删除');
+}
+function deleteItem(id){
+  if (!confirm('确认删除这个记忆桩？')) return;
+  data.items = data.items.filter(function(i){ return i.id !== id; });
+  save();
+  renderCanvas();
+  toast('已删除');
+}
+
+window.deletePalace = function(id){ deletePalace(id); };
+window.deleteRoom = function(id){ deleteRoom(id); };
+window.deleteItem = function(id){ deleteItem(id); };
 
 function showItemModal(editItem, presetX, presetY){
   var isEdit = !!editItem;
