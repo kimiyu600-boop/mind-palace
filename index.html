@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>记忆宫殿</title>
+<script>
+(function(){
+  if (sessionStorage.getItem('user')) {
+    location.href = 'mindpalace.html';
+  } else {
+    var saved = localStorage.getItem('kimi-remembered-user');
+    if (saved) {
+      try {
+        var user = JSON.parse(saved);
+        sessionStorage.setItem('user', JSON.stringify(user));
+        location.href = 'mindpalace.html';
+      } catch(e) { location.href = 'login.html'; }
+    } else {
+      location.href = 'login.html';
+    }
+  }
+})();
+</script>
+</head>
+<body></body>
+</html>
